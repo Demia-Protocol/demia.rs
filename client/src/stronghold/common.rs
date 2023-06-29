@@ -26,6 +26,13 @@ pub(super) const DERIVE_OUTPUT_RECORD_PATH: &[u8] = b"iota-wallet-derived";
 /// The value has been hard-coded historically.
 pub(super) const PRIVATE_DATA_CLIENT_PATH: &[u8] = b"iota_seed";
 
+/// The client path for X25519 shared keys
+pub(super) const DIFFIE_HELLMAN_SHARED_KEY_PATH: &[u8] = b"dh-shared_key";
+/// The client path for X25519 output
+pub(super) const DIFFIE_HELLMAN_OUTPUT_PATH: &[u8] = b"dh-output";
+/// Aead encryption salt
+pub(super) const AEAD_SALT: &[u8] = b"stronghold-adapter-encrypt";
+
 const PBKDF_SALT: &[u8] = b"wallet.rs";
 const PBKDF_ITER: usize = 100;
 

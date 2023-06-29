@@ -10,8 +10,8 @@ use iota_types::{
         dto::{PeerDto, ReceiptDto},
         response::{
             BlockMetadataResponse, BlockResponse, InfoResponse, MilestoneResponse, OutputWithMetadataResponse,
-            PeersResponse, ReceiptsResponse, RoutesResponse, SubmitBlockResponse, TipsResponse, TreasuryResponse,
-            UtxoChangesResponse,
+            PeersResponse, ReceiptsResponse, RoutesResponse, SubmitBlockResponse, TaggedResponse, TipsResponse,
+            TreasuryResponse, UtxoChangesResponse,
         },
     },
     block::{
@@ -20,7 +20,7 @@ use iota_types::{
             milestone::{MilestoneId, MilestonePayload},
             transaction::TransactionId,
         },
-        Block, BlockDto, BlockId,
+        Block, BlockDto, BlockId, TagId,
     },
 };
 use packable::PackableExt;
@@ -276,6 +276,26 @@ impl Client {
         };
 
         Ok(BlockId::from_str(&resp.block_id)?)
+    }
+
+
+    /// Finds a list of blocks by their TagId. Returns a list of blocks containing the tagId.
+    /// GET /api/core/v2/tagged/{tagId}
+    pub async fn get_blocks_by_tag(&self, tag: &TagId) -> Result<Vec<Block>> {
+        let path = &format!("api/core/v2/tagged/{}", tag.to_string());
+        let resp = self
+            .node_manager
+            .get_request::<TaggedResponse>(path, None, self.get_timeout(), false, true)
+            .await?;
+
+        let mut tagged = Vec::new();
+        for block in resp.inner() {
+            if let BlockResponse::Json(dto) = block{
+                tagged.push(Block::try_from_dto(dto, &self.get_protocol_parameters().await?)?);
+            }
+        }
+
+        Ok(tagged)
     }
 
     /// Finds a block by its BlockId. This method returns the given block object.

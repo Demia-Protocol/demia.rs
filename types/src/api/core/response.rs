@@ -164,6 +164,18 @@ pub enum BlockResponse {
     Raw(Vec<u8>),
 }
 
+/// Response of GET /api/core/v2/tagged/{tag_id}.
+/// Returns a list of blocks.
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TaggedResponse(Vec<BlockResponse>);
+
+impl TaggedResponse {
+    pub fn inner(&self) -> &[BlockResponse] {
+        &self.0
+    }
+}
+
 /// Response of GET /api/core/v2/blocks/{block_id}/metadata.
 /// Returns the metadata of a block.
 #[derive(Clone, Debug, Eq, PartialEq)]

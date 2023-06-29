@@ -57,7 +57,8 @@ use std::{
 };
 
 use derive_builder::Builder;
-use iota_stronghold::{KeyProvider, SnapshotPath, Stronghold};
+pub use iota_stronghold::Location;
+use iota_stronghold::{ClientVault, KeyProvider, SnapshotPath, Stronghold};
 use log::{debug, error, warn};
 use tokio::{sync::Mutex, task::JoinHandle};
 use zeroize::Zeroizing;
@@ -440,6 +441,14 @@ impl StrongholdAdapter {
                 timeout,
             )));
         }
+    }
+
+    /// Retrieve a vault client
+    pub async fn vault_client<P: AsRef<[u8]>>(&mut self, path: P) -> Result<ClientVault> {
+        self.stronghold.lock()
+            .await
+            .get_client(PRIVATE_DATA_CLIENT_PATH)
+            .map(|client| Ok(client.vault(path)))?
     }
 
     /// Restart the key clearing task.

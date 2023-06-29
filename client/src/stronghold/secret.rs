@@ -6,9 +6,13 @@
 use std::ops::Range;
 
 use async_trait::async_trait;
-use crypto::hashes::{blake2b::Blake2b256, Digest};
+use crypto::{
+    ciphers::{traits::Aead, aes_gcm::Aes256Gcm},
+    hashes::{blake2b::Blake2b256, Digest},
+    keys::x25519,
+};
 use iota_stronghold::{
-    procedures::{self, Chain, KeyType, Slip10DeriveInput},
+    procedures::{self, AeadCipher, Chain, KeyType, Sha2Hash, Slip10DeriveInput},
     Location,
 };
 use iota_types::block::{
@@ -23,8 +27,9 @@ use super::{
     StrongholdAdapter,
 };
 use crate::{
-    api::RemainderData,
+    api::{EncryptedData, RemainderData},
     secret::{types::InputSigningData, GenerateAddressOptions, SecretManage},
+    stronghold::common::{AEAD_SALT, DIFFIE_HELLMAN_OUTPUT_PATH, DIFFIE_HELLMAN_SHARED_KEY_PATH},
     Error, Result,
 };
 
@@ -177,7 +182,7 @@ impl StrongholdAdapter {
 
     /// Execute [Procedure::Ed25519PublicKey] in Stronghold to get an Ed25519 public key from the SLIP-10 private key
     /// located in `private_key`.
-    async fn ed25519_public_key(&self, private_key: Location) -> Result<[u8; 32]> {
+    pub async fn ed25519_public_key(&self, private_key: Location) -> Result<[u8; 32]> {
         Ok(self
             .stronghold
             .lock()
@@ -190,7 +195,7 @@ impl StrongholdAdapter {
     }
 
     /// Execute [Procedure::Ed25519Sign] in Stronghold to sign `msg` with `private_key` stored in the Stronghold vault.
-    async fn ed25519_sign(&self, private_key: Location, msg: &[u8]) -> Result<[u8; 64]> {
+    pub async fn ed25519_sign(&self, private_key: Location, msg: &[u8]) -> Result<[u8; 64]> {
         Ok(self
             .stronghold
             .lock()
@@ -238,6 +243,119 @@ impl StrongholdAdapter {
         self.write_stronghold_snapshot(None).await?;
 
         Ok(())
+    }
+
+    /// Encrypt a data packet
+    pub async fn x25519_encrypt(&mut self, public_key: x25519::PublicKey, private_key: Location, msg: Vec<u8>) -> Result<EncryptedData> {
+        let client = self
+            .stronghold
+            .lock()
+            .await
+            .get_client(PRIVATE_DATA_CLIENT_PATH)?;
+
+        let shared_key_path = Location::generic(DIFFIE_HELLMAN_SHARED_KEY_PATH, DIFFIE_HELLMAN_SHARED_KEY_PATH);
+        let shared_output_path = Location::generic(DIFFIE_HELLMAN_OUTPUT_PATH, DIFFIE_HELLMAN_OUTPUT_PATH);
+
+        // Retrieve the sender public key for inclusion in EncryptedData
+        let pub_key_proc = procedures::PublicKey {
+            ty: KeyType::X25519,
+            private_key: private_key.clone(),
+        };
+
+        let sender_pub_key = client.execute_procedure(pub_key_proc)?;
+
+        // Create a diffie hellman shared key exchange
+        let dh_proc = procedures::X25519DiffieHellman {
+            public_key: public_key.to_bytes(),
+            private_key: private_key.clone(),
+            shared_key: shared_key_path.clone(),
+        };
+
+        // Complete a KDF Concat procedure and encrypt the output with AEAD to make
+        // pass to recipient in serialized form
+        let kdf_proc = procedures::ConcatKdf {
+            hash: Sha2Hash::Sha256,
+            algorithm_id: "ECDH-ES".to_string(),
+            shared_secret: shared_key_path,
+            key_len: 32,
+            apu: vec![],
+            apv: vec![],
+            pub_info: vec![],
+            priv_info: vec![],
+            output: shared_output_path.clone(),
+        };
+
+        let mut nonce = [0_u8; 12];
+        crypto::utils::rand::fill(&mut nonce)?;
+
+        let aed_encrypt = procedures::AeadEncrypt {
+            cipher: AeadCipher::Aes256Gcm,
+            associated_data: AEAD_SALT.to_vec(),
+            plaintext: msg,
+            nonce: nonce.to_vec(),
+            key: shared_output_path,
+        };
+
+        client.execute_procedure_chained(vec![dh_proc.into(), kdf_proc.into()])?;
+        let mut resp = client.execute_procedure(aed_encrypt)?;
+
+        let mut tag = [0u8; 16];
+        let mut data = [0u8; 32];
+        tag.clone_from_slice(&resp.drain(..Aes256Gcm::TAG_LENGTH).collect::<Vec<u8>>());
+        data.clone_from_slice(resp.as_slice());
+
+        Ok(EncryptedData::new(
+            sender_pub_key,
+            nonce,
+            tag,
+            data,
+        ))
+    }
+
+    /// Decrypt a data packet
+    pub async fn x25519_decrypt(&mut self, private_key: Location, msg: EncryptedData) -> Result<Vec<u8>> {
+        let client = self
+            .stronghold
+            .lock()
+            .await
+            .get_client(PRIVATE_DATA_CLIENT_PATH)?;
+
+        let shared_key_path = Location::generic(DIFFIE_HELLMAN_SHARED_KEY_PATH, DIFFIE_HELLMAN_SHARED_KEY_PATH);
+        let shared_output_path = Location::generic(DIFFIE_HELLMAN_OUTPUT_PATH, DIFFIE_HELLMAN_OUTPUT_PATH);
+
+        // Create a diffie hellman shared key exchange
+        let dh_proc = procedures::X25519DiffieHellman {
+            public_key: msg.public_key,
+            private_key: private_key.clone(),
+            shared_key: shared_key_path.clone(),
+        };
+
+        // Complete a KDF Concat procedure
+        let kdf_proc = procedures::ConcatKdf {
+            hash: Sha2Hash::Sha256,
+            algorithm_id: "ECDH-ES".to_string(),
+            shared_secret: shared_key_path,
+            key_len: 32,
+            apu: vec![],
+            apv: vec![],
+            pub_info: vec![],
+            priv_info: vec![],
+            output: shared_output_path.clone(),
+        };
+
+        client.execute_procedure_chained(vec![dh_proc.into(), kdf_proc.into()])?;
+
+        // Decrypt AEAD Encrypted Data packet and return the message within
+        let aed_decrypt = procedures::AeadDecrypt {
+            cipher: AeadCipher::Aes256Gcm,
+            associated_data: AEAD_SALT.as_ref().to_vec(),
+            ciphertext: msg.ciphertext.to_vec(),
+            tag: msg.tag.to_vec(),
+            nonce: msg.nonce.to_vec(),
+            key: shared_output_path,
+        };
+
+        Ok(client.execute_procedure(aed_decrypt)?)
     }
 }
 
