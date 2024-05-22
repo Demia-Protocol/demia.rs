@@ -445,7 +445,8 @@ impl StrongholdAdapter {
 
     /// Retrieve a vault client
     pub async fn vault_client<P: AsRef<[u8]>>(&mut self, path: P) -> Result<ClientVault> {
-        self.stronghold.lock()
+        self.stronghold
+            .lock()
             .await
             .get_client(PRIVATE_DATA_CLIENT_PATH)
             .map(|client| Ok(client.vault(path)))?

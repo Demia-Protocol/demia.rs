@@ -6,8 +6,8 @@
 #[macro_use]
 mod r#macro;
 mod block_id;
-mod tag_id;
 mod error;
+mod tag_id;
 
 /// A module that provides types and syntactic validations of addresses.
 pub mod address;
@@ -44,8 +44,8 @@ pub use self::{block::dto::BlockDto, error::dto::DtoError};
 pub use self::{
     block::{Block, BlockBuilder},
     block_id::BlockId,
-    tag_id::TagId,
     error::Error,
+    tag_id::TagId,
 };
 
 pub(crate) const PROTOCOL_VERSION: u8 = 2;

@@ -7,7 +7,7 @@ use std::ops::Range;
 
 use async_trait::async_trait;
 use crypto::{
-    ciphers::{traits::Aead, aes_gcm::Aes256Gcm},
+    ciphers::{aes_gcm::Aes256Gcm, traits::Aead},
     hashes::{blake2b::Blake2b256, Digest},
     keys::x25519,
 };
@@ -246,12 +246,13 @@ impl StrongholdAdapter {
     }
 
     /// Encrypt a data packet
-    pub async fn x25519_encrypt(&mut self, public_key: x25519::PublicKey, private_key: Location, msg: Vec<u8>) -> Result<EncryptedData> {
-        let client = self
-            .stronghold
-            .lock()
-            .await
-            .get_client(PRIVATE_DATA_CLIENT_PATH)?;
+    pub async fn x25519_encrypt(
+        &mut self,
+        public_key: x25519::PublicKey,
+        private_key: Location,
+        msg: Vec<u8>,
+    ) -> Result<EncryptedData> {
+        let client = self.stronghold.lock().await.get_client(PRIVATE_DATA_CLIENT_PATH)?;
 
         let shared_key_path = Location::generic(DIFFIE_HELLMAN_SHARED_KEY_PATH, DIFFIE_HELLMAN_SHARED_KEY_PATH);
         let shared_output_path = Location::generic(DIFFIE_HELLMAN_OUTPUT_PATH, DIFFIE_HELLMAN_OUTPUT_PATH);
@@ -304,21 +305,12 @@ impl StrongholdAdapter {
         tag.clone_from_slice(&resp.drain(..Aes256Gcm::TAG_LENGTH).collect::<Vec<u8>>());
         data.clone_from_slice(resp.as_slice());
 
-        Ok(EncryptedData::new(
-            sender_pub_key,
-            nonce,
-            tag,
-            data,
-        ))
+        Ok(EncryptedData::new(sender_pub_key, nonce, tag, data))
     }
 
     /// Decrypt a data packet
     pub async fn x25519_decrypt(&mut self, private_key: Location, msg: EncryptedData) -> Result<Vec<u8>> {
-        let client = self
-            .stronghold
-            .lock()
-            .await
-            .get_client(PRIVATE_DATA_CLIENT_PATH)?;
+        let client = self.stronghold.lock().await.get_client(PRIVATE_DATA_CLIENT_PATH)?;
 
         let shared_key_path = Location::generic(DIFFIE_HELLMAN_SHARED_KEY_PATH, DIFFIE_HELLMAN_SHARED_KEY_PATH);
         let shared_output_path = Location::generic(DIFFIE_HELLMAN_OUTPUT_PATH, DIFFIE_HELLMAN_OUTPUT_PATH);

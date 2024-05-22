@@ -248,13 +248,7 @@ pub struct EncryptedData {
 
 impl EncryptedData {
     /// Creates a new `EncryptedData` instance.
-    pub fn new(
-        public_key: [u8; 32],
-        nonce: [u8; 12],
-        tag: [u8;16],
-        ciphertext: [u8; 32],
-    ) -> Self {
-
+    pub fn new(public_key: [u8; 32], nonce: [u8; 12], tag: [u8; 16], ciphertext: [u8; 32]) -> Self {
         Self {
             public_key,
             nonce,

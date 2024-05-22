@@ -278,7 +278,6 @@ impl Client {
         Ok(BlockId::from_str(&resp.block_id)?)
     }
 
-
     /// Finds a list of blocks by their TagId. Returns a list of blocks containing the tagId.
     /// GET /api/core/v2/tagged/{tagId}
     pub async fn get_blocks_by_tag(&self, tag: &TagId) -> Result<Vec<Block>> {
@@ -290,7 +289,7 @@ impl Client {
 
         let mut tagged = Vec::new();
         for block in resp.inner() {
-            if let BlockResponse::Json(dto) = block{
+            if let BlockResponse::Json(dto) = block {
                 tagged.push(Block::try_from_dto(dto, &self.get_protocol_parameters().await?)?);
             }
         }

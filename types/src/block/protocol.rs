@@ -125,7 +125,7 @@ impl ProtocolParameters {
 }
 
 /// Returns a [`ProtocolParameters`] for testing purposes.
-#[cfg(any(feature = "test", feature = "rand"))]
+#[cfg(feature = "rand")]
 pub fn protocol_parameters() -> ProtocolParameters {
     ProtocolParameters::new(
         2,
