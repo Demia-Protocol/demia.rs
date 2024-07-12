@@ -47,7 +47,7 @@ once_cell = { version = "1.17.1", default-features = false, features = [ "std" ]
 iota-ledger-nano = { version = "1.0.0-alpha.2", default-features = false, optional = true }
 
 # stronghold secret manager integration
-iota_stronghold = { git = "https://github.com/demia-protocol/demia-sdk", branch = "develop", default-features = false, features = [ "std" ], optional = true }
+iota_stronghold = { git = "https://github.com/demia-protocol/demia-sdk", branch = "demia-retriever", default-features = false, features = [ "std" ], optional = true }
 
 # message_interface
 backtrace = { version = "0.3.67", default-features = false, features = [ "std" ], optional = true }

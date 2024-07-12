@@ -1303,7 +1303,7 @@ dependencies = [
 [[package]]
 name = "iota_stronghold"
 version = "1.1.0"
-source = "git+https://github.com/demia-protocol/demia-sdk#677b93e3d2565fa626b6a5d4a477de1622fbcc0d"
+source = "git+https://github.com/demia-protocol/demia-sdk?branch=demia-retriever#9ef0b2e621c82b155d428742eb4c0d4706cfee2d"
 dependencies = [
  "bincode",
  "hkdf",
@@ -2445,7 +2445,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stronghold-derive"
 version = "1.0.0"
-source = "git+https://github.com/demia-protocol/demia-sdk#677b93e3d2565fa626b6a5d4a477de1622fbcc0d"
+source = "git+https://github.com/demia-protocol/demia-sdk?branch=demia-retriever#9ef0b2e621c82b155d428742eb4c0d4706cfee2d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2455,7 +2455,7 @@ dependencies = [
 [[package]]
 name = "stronghold-runtime"
 version = "1.1.0"
-source = "git+https://github.com/demia-protocol/demia-sdk#677b93e3d2565fa626b6a5d4a477de1622fbcc0d"
+source = "git+https://github.com/demia-protocol/demia-sdk?branch=demia-retriever#9ef0b2e621c82b155d428742eb4c0d4706cfee2d"
 dependencies = [
  "dirs",
  "iota-crypto 0.18.0",
@@ -2473,7 +2473,7 @@ dependencies = [
 [[package]]
 name = "stronghold-utils"
 version = "1.0.0"
-source = "git+https://github.com/demia-protocol/demia-sdk#677b93e3d2565fa626b6a5d4a477de1622fbcc0d"
+source = "git+https://github.com/demia-protocol/demia-sdk?branch=demia-retriever#9ef0b2e621c82b155d428742eb4c0d4706cfee2d"
 dependencies = [
  "rand",
  "stronghold-derive",
@@ -2482,7 +2482,7 @@ dependencies = [
 [[package]]
 name = "stronghold_engine"
 version = "1.1.0"
-source = "git+https://github.com/demia-protocol/demia-sdk#677b93e3d2565fa626b6a5d4a477de1622fbcc0d"
+source = "git+https://github.com/demia-protocol/demia-sdk?branch=demia-retriever#9ef0b2e621c82b155d428742eb4c0d4706cfee2d"
 dependencies = [
  "anyhow",
  "dirs-next",
